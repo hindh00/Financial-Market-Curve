@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Run pytest
+        run: python -m pytest tests/ -v
+
+  dbt:
+    runs-on: ubuntu-latest
+    # Only runs once Databricks credentials exist as repo secrets (Phase 0).
+    # On a fork or before Phase 0 setup, this job is a no-op rather than a
+    # red X, since there's nothing to build/test against yet.
+    if: ${{ vars.DBT_ENABLED == 'true' }}
+    env:
+      DBT_PROFILES_DIR: dbt
+      DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+      DATABRICKS_HTTP_PATH: ${{ secrets.DATABRICKS_HTTP_PATH }}
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dbt
+        run: pip install dbt-databricks
+
+      - name: dbt deps
+        working-directory: dbt
+        run: dbt deps
+
+      - name: dbt seed
+        working-directory: dbt
+        run: dbt seed
+
+      - name: dbt build
+        working-directory: dbt
+        run: dbt build

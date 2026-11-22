@@ -1,0 +1,14 @@
+series_id,category,tenor,instrument_type,unit,label
+V39079,policy_rate,,policy_rate,percent,Target for the overnight rate
+TB.CDN.60D.MID,treasury_bill,60D,treasury_bill,percent,Treasury bill 60 day
+TB.CDN.90D.MID,treasury_bill,90D,treasury_bill,percent,Treasury bill 90 day
+TB.CDN.180D.MID,treasury_bill,180D,treasury_bill,percent,Treasury bill 180 day
+TB.CDN.1Y.MID,treasury_bill,1Y,treasury_bill,percent,Treasury bill 1 year
+BD.CDN.2YR.DQ.YLD,benchmark_bond,2Y,benchmark_bond,percent,Benchmark bond yield 2 year
+BD.CDN.3YR.DQ.YLD,benchmark_bond,3Y,benchmark_bond,percent,Benchmark bond yield 3 year
+BD.CDN.5YR.DQ.YLD,benchmark_bond,5Y,benchmark_bond,percent,Benchmark bond yield 5 year
+BD.CDN.7YR.DQ.YLD,benchmark_bond,7Y,benchmark_bond,percent,Benchmark bond yield 7 year
+BD.CDN.10YR.DQ.YLD,benchmark_bond,10Y,benchmark_bond,percent,Benchmark bond yield 10 year
+BD.CDN.LONG.DQ.YLD,benchmark_bond,LONG,benchmark_bond,percent,Benchmark bond yield long-term
+FXUSDCAD,fx,,fx_rate,cad_per_usd,USD/CAD daily exchange rate
+AVG.INTWO,corra,,overnight_rate,percent,CORRA - Canadian Overnight Repo Rate Average

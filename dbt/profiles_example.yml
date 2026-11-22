@@ -1,0 +1,19 @@
+# Documents the connection shape only — copy to ~/.dbt/profiles.yml locally,
+# or rely on the env vars below being injected as GitHub Actions secrets in
+# CI (see .github/workflows/ci.yml and docs/setup_databricks_free_edition.md).
+# Never commit a real profiles.yml with live credentials.
+
+financial_market_curve:
+  target: dev
+  outputs:
+    dev:
+      type: databricks
+      catalog: fmc
+      schema: silver # default; most models override via +schema in dbt_project.yml
+      host: "{{ env_var('DATABRICKS_HOST') }}"
+      http_path: "{{ env_var('DATABRICKS_HTTP_PATH') }}"
+      token: "{{ env_var('DATABRICKS_TOKEN') }}"
+      # Kept modest deliberately: Free Edition caps the account at 5
+      # concurrent job tasks, and dbt's own thread pool runs inside
+      # whichever single job task invokes it.
+      threads: 2

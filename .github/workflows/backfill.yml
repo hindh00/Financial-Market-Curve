@@ -1,0 +1,34 @@
+name: One-time historical backfill
+
+# Manual only — never on a schedule. Run this once before the first
+# `dbt run-operation land_bronze_files` / `dbt build`, so the backfill
+# file exists at /Volumes/fmc/bronze/raw_valet/_backfill before that macro
+# tries to read it. Safe to re-run later (each series' file is overwritten
+# in place, not appended).
+on:
+  workflow_dispatch:
+    inputs:
+      start_date:
+        description: "Backfill start date (YYYY-MM-DD). Leave blank to use ingestion/config.py's BACKFILL_START_DATE."
+        required: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r ingestion/requirements.txt
+
+      - name: Backfill historical data into Databricks bronze volume
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_VOLUME_PATH: ${{ secrets.DATABRICKS_VOLUME_PATH }}
+          BACKFILL_START_DATE: ${{ github.event.inputs.start_date }}
+        run: python -m ingestion.backfill

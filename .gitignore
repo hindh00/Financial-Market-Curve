@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+
+# dbt
+dbt/target/
+dbt/dbt_packages/
+dbt/logs/
+.dbt/
+
+# Never commit real credentials
+profiles.yml
+.env
+
+# Tests
+tests/
+
+# OS
+.DS_Store

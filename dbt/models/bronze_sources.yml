@@ -1,0 +1,38 @@
+version: 2
+
+sources:
+  - name: bronze
+    database: fmc
+    schema: bronze
+    tables:
+      - name: raw_observations
+        description: >
+          One row per landed snapshot file (series_id x pull_date), bridged
+          from the Volume by the land_bronze_files macro. payload_json
+          holds the raw Valet API response as a JSON string.
+        columns:
+          - name: series_id
+            tests: [not_null]
+          - name: pull_date
+            tests: [not_null]
+          - name: payload_json
+            tests: [not_null]
+          - name: observations_flat_json
+            description: Uniform (observation_date, field_name, value_raw) array — see ingestion/flatten.py.
+            tests: [not_null]
+          - name: is_backfill
+            description: >
+              True for rows landed from ingestion/backfill.py (one file per
+              series, years of history) rather than the daily cron (one
+              file per series per day). See stg_observations.sql for how
+              pull_date is derived differently for each.
+            tests: [not_null]
+
+      - name: raw_dq_results
+        description: >
+          Python-side DQ check results (freshness, schema drift), one row
+          per check per landed pull — see ingestion/land_dq_results.py and
+          the land_dq_results_files macro.
+        columns:
+          - name: landed_pull_date
+            tests: [not_null]

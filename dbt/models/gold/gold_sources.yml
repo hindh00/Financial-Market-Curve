@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: gold_py
+    database: fmc
+    schema: gold
+    tables:
+      - name: pca_curve_factors_raw
+        description: >
+          Written by jobs/pca_curve_factors.py (a Databricks Python job
+          task, not a dbt model — dbt has no PCA/linear-algebra primitive).
+          gold_pca_curve_factors.sql is a thin pass-through over this table
+          so it still shows up in dbt's docs/lineage.

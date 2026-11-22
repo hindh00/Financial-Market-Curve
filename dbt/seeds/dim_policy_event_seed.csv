@@ -1,0 +1,4 @@
+decision_date,action,size_bps,has_mpr,notes
+2026-01-28,hold,0,true,SAMPLE ROW - replace with verified data from the Bank's published Schedule for Fixed Announcement Dates before relying on this table
+2026-03-11,hold,0,false,SAMPLE ROW - replace with verified data from the Bank's published Schedule for Fixed Announcement Dates before relying on this table
+2026-04-15,cut,25,true,SAMPLE ROW - replace with verified data from the Bank's published Schedule for Fixed Announcement Dates before relying on this table

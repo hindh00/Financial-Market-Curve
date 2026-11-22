@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: fact_observation
+    columns:
+      - name: series_id
+        tests: [not_null]
+      - name: observation_date
+        tests: [not_null]
+      - name: pull_date
+        tests: [not_null]
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          combination_of_columns: [series_id, observation_date, pull_date]
+
+  - name: dim_series
+    columns:
+      - name: series_id
+        tests: [not_null, unique]
+
+  - name: dim_policy_event
+    columns:
+      - name: decision_date
+        tests: [not_null, unique]
+      - name: action
+        tests:
+          - accepted_values:
+              values: ["cut", "hold", "hike"]
+      - name: size_bps
+        description: 0 for holds; positive magnitude for both cuts and hikes (the `action` column carries direction).
+
+  - name: dim_date
+    columns:
+      - name: date_day
+        tests: [not_null, unique]

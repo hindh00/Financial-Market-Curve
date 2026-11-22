@@ -1,0 +1,58 @@
+name: "financial_market_curve"
+version: "1.0.0"
+config-version: 2
+
+profile: "financial_market_curve"
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # Must be <= ingestion/config.py's BACKFILL_START_DATE, or backfilled
+  # fact rows before this date will fail the referential-integrity DQ
+  # check (no matching dim_date row to join to).
+  backfill_start_date: "2017-01-01"
+
+  # >4 std-dev (robust) jump threshold, shared between dbt jump-check models
+  # and ingestion/dq_checks.py's Python equivalent — keep these in sync.
+  jump_threshold_std: 4.0
+
+  # Benchmark-switch heuristic (gold_benchmark_switch_log): a tenor's daily
+  # yield change must exceed this absolute threshold (percentage points,
+  # i.e. 0.15 = 15 bps) AND be >3x that day's median move across all
+  # benchmark tenors to be flagged as a likely bond-roll artifact rather
+  # than a market-wide move. Calibrate against real data once Phase 1 has
+  # enough history to see what an actual switch day looks like.
+  benchmark_switch_abs_threshold: 0.15
+
+  # CORRA fallback-rate heuristic (gold_corra_vs_target) — placeholder
+  # thresholds; replace with the Bank's actual published fallback criteria
+  # once real CORRA volume/submitter data is observed.
+  corra_fallback_volume_threshold: 5000
+  corra_fallback_submitter_threshold: 5
+
+models:
+  financial_market_curve:
+    silver:
+      +materialized: view
+      +schema: silver
+    gold:
+      +materialized: table
+      +schema: gold
+
+seeds:
+  financial_market_curve:
+    +schema: silver
+    dim_policy_event_seed:
+      +column_types:
+        decision_date: date
+        size_bps: int
+        has_mpr: boolean
+    canadian_holidays_seed:
+      +column_types:
+        holiday_date: date
+    series_registry_seed:
+      +schema: silver
