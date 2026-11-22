@@ -20,3 +20,10 @@ tests/
 
 # OS
 .DS_Store
+
+# Internal docs — keep only the README and the two docs worth
+# showing in a portfolio repo (architecture + data dictionary)
+*.md
+!/README.md
+!/docs/architecture.md
+!/docs/data_dictionary.md

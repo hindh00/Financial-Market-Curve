@@ -76,14 +76,22 @@ Never hardcoded — see `ingestion/rrb_lookup.py` and
 bronze -> silver -> gold with a `is_rrb_benchmark` flag, so
 `gold_breakeven_inflation.sql` can label itself from whatever series was
 actually resolved, including a caveat about the benchmark's indefinite
-aging (issuance ceased in 2022).
+aging (issuance ceased in 2022). Verified against the live API
+(2026-11-22): Valet doesn't expose individual-bond-level RRB series the
+way the original plan assumed — it only ever publishes one blended
+long-term yield, `BD.CDN.RRB.DQ.YLD`, parallel to `BD.CDN.LONG.DQ.YLD` for
+nominal bonds. `RRB_DESCRIPTION_PATTERN` is narrowed (`"real return bonds?
+yield"`) to resolve to it uniquely instead of the 15 loosely-related
+series ("real return bond" alone also matches index ratios, CPI
+reference dates, and asset-holding series).
 
 ## CORRA as a distribution (feature 5)
-`stg_corra.sql`'s sub-field names (`AVG.INTWO_P05` etc.) are a best guess
-at the live group-observation shape — **verify against a real
-`/observations/group/AVG.INTWO/json` response in Phase 1** and correct if
-the Bank's actual naming differs. `gold_corra_vs_target.sql`'s fallback-
-rate thresholds are similarly placeholders pending real volume data.
+CORRA publishes under group `CORRA_METRICS` (not `AVG.INTWO` — that's the
+id of the rate sub-series *within* the group, not the group's own name).
+`stg_corra.sql`'s field names are verified against a real
+`/observations/group/CORRA_METRICS/json` response (2026-11-22).
+`gold_corra_vs_target.sql`'s fallback-rate thresholds are still
+placeholders pending real volume data.
 
 ## PCA (feature 6)
 `jobs/pca_curve_factors.py` runs as a single Databricks Python job task

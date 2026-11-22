@@ -1,15 +1,9 @@
 {#
-  CORRA's group response carries several named sub-fields per day (the
-  rate itself, percentiles, volume, unique submitters). This pivots those
-  into named columns per (observation_date, pull_date).
-
-  CAVEAT: the exact sub-field names below (AVG.INTWO_P05/P25/P75/P95,
-  AVG.INTWO_VOLUME, AVG.INTWO_SUBMITTERS) are this project's best guess at
-  the live Valet group-observation naming convention, based on the group
-  label pattern, and have NOT been verified against a real API response —
-  do that in Phase 1 (hit /observations/group/AVG.INTWO/json directly and
-  inspect the actual field names) and correct the CASE expressions below
-  if they differ before trusting this model.
+  CORRA is published via the CORRA_METRICS group (not a bare series, and
+  not named "AVG.INTWO" — that's just the id of the rate sub-series within
+  the group). The group bundles the rate itself plus trading-volume and
+  percentile transparency metrics. Field names below are verified against
+  a real /observations/group/CORRA_METRICS/json response (2026-11-22).
 #}
 
 with exploded as (
@@ -23,7 +17,7 @@ with exploded as (
             )
         ) as obs
     from {{ source('bronze', 'raw_observations') }}
-    where series_id = 'AVG.INTWO'
+    where series_id = 'CORRA_METRICS'
 ),
 
 parsed as (
@@ -41,11 +35,11 @@ select
     pull_date,
     pull_timestamp_utc,
     max(case when field_name = 'AVG.INTWO' then value end) as corra_rate,
-    max(case when field_name = 'AVG.INTWO_P05' then value end) as corra_p05,
-    max(case when field_name = 'AVG.INTWO_P25' then value end) as corra_p25,
-    max(case when field_name = 'AVG.INTWO_P75' then value end) as corra_p75,
-    max(case when field_name = 'AVG.INTWO_P95' then value end) as corra_p95,
-    max(case when field_name = 'AVG.INTWO_VOLUME' then value end) as volume,
-    max(case when field_name = 'AVG.INTWO_SUBMITTERS' then value end) as unique_submitters
+    max(case when field_name = 'CORRA_RATE_AT_PERCENTILE_5' then value end) as corra_p05,
+    max(case when field_name = 'CORRA_RATE_AT_PERCENTILE_25' then value end) as corra_p25,
+    max(case when field_name = 'CORRA_RATE_AT_PERCENTILE_75' then value end) as corra_p75,
+    max(case when field_name = 'CORRA_RATE_AT_PERCENTILE_95' then value end) as corra_p95,
+    max(case when field_name = 'CORRA_TRIMMED_VOLUME' then value end) as volume,
+    max(case when field_name = 'CORRA_NUMBER_OF_SUBMITTERS' then value end) as unique_submitters
 from parsed
 group by observation_date, pull_date, pull_timestamp_utc

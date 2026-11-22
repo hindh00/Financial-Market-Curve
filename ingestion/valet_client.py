@@ -83,7 +83,7 @@ class ValetClient:
         start_date: str | None = None,
         end_date: str | None = None,
     ) -> ValetResponse:
-        """GET /observations/group/{group_name}/json — a group (e.g. CORRA's AVG.INTWO)."""
+        """GET /observations/group/{group_name}/json — a group (e.g. CORRA's CORRA_METRICS)."""
         params = self._observation_params(recent, start_date, end_date)
         return self._get(f"observations/group/{group_name}/json", params=params)
 

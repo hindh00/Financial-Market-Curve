@@ -1,6 +1,6 @@
 """Normalize Valet API responses into a uniform tall shape at ingestion time.
 
-Single-series and group (e.g. CORRA's AVG.INTWO) responses have different
+Single-series and group (e.g. CORRA's CORRA_METRICS) responses have different
 JSON shapes — a series response's per-day object has one dynamic key (the
 series id), a group response's has several (one per sub-field: the rate
 itself, percentiles, volume, ...). Flattening both into the same

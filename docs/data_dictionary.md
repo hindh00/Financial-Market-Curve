@@ -24,5 +24,15 @@
 
 ## Known placeholders to replace before trusting the numbers
 - `dbt/seeds/dim_policy_event_seed.csv` — sample rows, not the Bank's verified schedule.
-- `dbt/models/silver/stg_corra.sql` — CORRA sub-field names are a best guess, unverified against a live API response.
 - `dbt_project.yml` vars `benchmark_switch_abs_threshold`, `corra_fallback_volume_threshold`, `corra_fallback_submitter_threshold` — heuristic thresholds pending calibration against real data.
+
+## Verified against the live API (2026-11-22)
+- CORRA is published as group `CORRA_METRICS` (not `AVG.INTWO` — that's the
+  rate sub-series' id within the group). `stg_corra.sql`'s field names are
+  confirmed against a real `/observations/group/CORRA_METRICS/json` response.
+- The RRB benchmark resolves to `BD.CDN.RRB.DQ.YLD` ("Real Return Bonds
+  yield, long-term") — Valet doesn't expose individual-bond-level RRB
+  series the way the plan originally assumed; it only ever publishes one
+  blended long-term RRB yield, parallel to `BD.CDN.LONG.DQ.YLD` for
+  nominal bonds. `RRB_DESCRIPTION_PATTERN` in `ingestion/config.py` is
+  narrowed to match it uniquely.

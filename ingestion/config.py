@@ -41,9 +41,14 @@ SERIES_REGISTRY = {
 
 # CORRA is published as a group (richer than a single series: the rate plus
 # percentiles, volume, unique submitters, trim rate).
-CORRA_GROUP_NAME = "AVG.INTWO"
+CORRA_GROUP_NAME = "CORRA_METRICS"
 
 # Pattern used by rrb_lookup.py to find the current Real Return Bond
 # benchmark series in /lists/series/json. Matched case-insensitively against
-# each series' description/label text.
-RRB_DESCRIPTION_PATTERN = r"real return bond"
+# each series' description/label text. Verified against the live API
+# (2026-11-22): /lists/series/json has 15 series mentioning "real return
+# bond" (index ratios, CPI ref dates, asset holdings, ...) but only one —
+# BD.CDN.RRB.DQ.YLD, "Real Return Bonds yield, long-term" — is actually the
+# benchmark yield series (the RRB counterpart to BD.CDN.LONG.DQ.YLD etc.).
+# Narrowed to match on "yield" too so resolution stays unambiguous.
+RRB_DESCRIPTION_PATTERN = r"real return bonds? yield"
