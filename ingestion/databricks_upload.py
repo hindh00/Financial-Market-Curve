@@ -23,9 +23,9 @@ class DatabricksUploadError(RuntimeError):
 
 @dataclass
 class DatabricksConfig:
-    host: str  # e.g. https://<workspace>.cloud.databricks.com
+    host: str  # bare hostname, e.g. <workspace>.cloud.databricks.com — no scheme
     token: str
-    volume_path: str  # e.g. /Volumes/fmc/bronze/raw_valet
+    volume_path: str  # e.g. /Volumes/financial_market_curve/bronze/raw_valet
 
     @classmethod
     def from_env(cls) -> "DatabricksConfig":
@@ -37,7 +37,15 @@ class DatabricksConfig:
         ] if not val]
         if missing:
             raise DatabricksUploadError(f"Missing required env vars: {', '.join(missing)}")
-        return cls(host=host.rstrip("/"), token=token, volume_path=volume_path.rstrip("/"))
+        # Normalize away any scheme: dbt-databricks' profiles.yml `host:` field
+        # wants a bare hostname (it prepends https:// itself), so DATABRICKS_HOST
+        # is defined as bare-hostname everywhere, and this is the one place
+        # that still needs a full URL — built explicitly in upload_json below.
+        host = host.rstrip("/")
+        for scheme in ("https://", "http://"):
+            if host.startswith(scheme):
+                host = host[len(scheme):]
+        return cls(host=host, token=token, volume_path=volume_path.rstrip("/"))
 
 
 def upload_json(config: DatabricksConfig, relative_path: str, envelope: dict) -> None:
@@ -48,7 +56,7 @@ def upload_json(config: DatabricksConfig, relative_path: str, envelope: dict) ->
     pull_date, so only today's file is ever touched.
     """
     full_path = f"{config.volume_path}/{relative_path}"
-    url = f"{config.host}/api/2.0/fs/files{full_path}"
+    url = f"https://{config.host}/api/2.0/fs/files{full_path}"
     body = json.dumps(envelope).encode("utf-8")
 
     resp = requests.put(

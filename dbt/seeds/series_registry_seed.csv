@@ -11,4 +11,3 @@ BD.CDN.7YR.DQ.YLD,benchmark_bond,7Y,benchmark_bond,percent,Benchmark bond yield 
 BD.CDN.10YR.DQ.YLD,benchmark_bond,10Y,benchmark_bond,percent,Benchmark bond yield 10 year
 BD.CDN.LONG.DQ.YLD,benchmark_bond,LONG,benchmark_bond,percent,Benchmark bond yield long-term
 FXUSDCAD,fx,,fx_rate,cad_per_usd,USD/CAD daily exchange rate
-AVG.INTWO,corra,,overnight_rate,percent,CORRA - Canadian Overnight Repo Rate Average

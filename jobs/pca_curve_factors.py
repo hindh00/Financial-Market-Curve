@@ -35,6 +35,7 @@ logger = logging.getLogger("pca_curve_factors")
 
 N_COMPONENTS = 3
 FACTOR_LABELS = ["level", "slope", "curvature"]
+CATALOG_NAME = "financial_market_curve"  # keep in sync with dbt_project.yml's catalog_name var
 
 
 def _connect():
@@ -48,9 +49,9 @@ def _connect():
 
 
 def fetch_daily_curve(conn) -> pd.DataFrame:
-    query = """
+    query = f"""
         select observation_date, tenor, yield
-        from fmc.gold.gold_daily_curve
+        from {CATALOG_NAME}.gold.gold_daily_curve
         where is_benchmark_switch_day = false
         order by observation_date
     """
@@ -86,8 +87,8 @@ def compute_pca(wide_yields: pd.DataFrame) -> tuple[pd.DataFrame, np.ndarray]:
 
 def write_factors(conn, factors: pd.DataFrame, explained_variance_ratio: np.ndarray) -> None:
     with conn.cursor() as cursor:
-        cursor.execute("""
-            CREATE OR REPLACE TABLE fmc.gold.pca_curve_factors_raw (
+        cursor.execute(f"""
+            CREATE OR REPLACE TABLE {CATALOG_NAME}.gold.pca_curve_factors_raw (
                 observation_date DATE,
                 pc1_level DOUBLE,
                 pc2_slope DOUBLE,
@@ -110,7 +111,7 @@ def write_factors(conn, factors: pd.DataFrame, explained_variance_ratio: np.ndar
             for _, row in factors.iterrows()
         ]
         cursor.executemany(
-            "INSERT INTO fmc.gold.pca_curve_factors_raw VALUES (?, ?, ?, ?, ?, ?, ?)",
+            f"INSERT INTO {CATALOG_NAME}.gold.pca_curve_factors_raw VALUES (?, ?, ?, ?, ?, ?, ?)",
             rows,
         )
 
@@ -136,7 +137,7 @@ def main() -> int:
             )
 
         write_factors(conn, factors, explained_variance_ratio)
-        logger.info("Wrote %d rows to fmc.gold.pca_curve_factors_raw", len(factors))
+        logger.info("Wrote %d rows to %s.gold.pca_curve_factors_raw", len(factors), CATALOG_NAME)
 
     return 0
 

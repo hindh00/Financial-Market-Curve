@@ -3,18 +3,18 @@
 ```
 Bank of Canada Valet API
   -> GitHub Actions (daily cron, Python)        <- only component calling the public internet from outside Databricks
-  -> Unity Catalog Volume fmc.bronze.raw_valet   (raw JSON snapshots + pull timestamp)
+  -> Unity Catalog Volume financial_market_curve.bronze.raw_valet   (raw JSON snapshots + pull timestamp)
   -> Databricks Job (sequential tasks, respects the 5-concurrent-task cap):
-       1. dbt run-operation land_bronze_files      -> fmc.bronze.raw_observations
-          dbt run-operation land_dq_results_files  -> fmc.bronze.raw_dq_results
+       1. dbt run-operation land_bronze_files      -> financial_market_curve.bronze.raw_observations
+          dbt run-operation land_dq_results_files  -> financial_market_curve.bronze.raw_dq_results
        2. dbt build   (silver -> gold, incl. dbt tests)
-       3. python jobs/pca_curve_factors.py       -> fmc.gold.pca_curve_factors_raw
+       3. python jobs/pca_curve_factors.py       -> financial_market_curve.gold.pca_curve_factors_raw
   -> Databricks AI/BI (Lakeview) Dashboards, 5 pages, in-browser
 ```
 
 A separate, one-time `ingestion/backfill.py` (`.github/workflows/backfill.yml`,
 manual trigger only) pulls each series' full available history into
-`/Volumes/fmc/bronze/raw_valet/_backfill/` **before** the daily cron/dbt
+`/Volumes/financial_market_curve/bronze/raw_valet/_backfill/` **before** the daily cron/dbt
 chain is ever run for the first time — `land_bronze_files()` reads that
 path unconditionally, so it errors if the path doesn't exist yet. See
 "Historical backfill" below.
@@ -27,7 +27,10 @@ landed JSON into the Unity Catalog Volume afterward is an *inbound* call
 to Databricks (Files REST API), which the allowlist doesn't affect.
 
 ## Naming convention
-Catalog `fmc`, schemas `bronze` / `silver` / `gold`. Every gold table that
+Catalog `financial_market_curve` (set via dbt's `catalog_name` var —
+`dbt/dbt_project.yml` — and `CATALOG_NAME` in `jobs/pca_curve_factors.py`;
+change it in exactly those two places if you ever rename the catalog),
+schemas `bronze` / `silver` / `gold`. Every gold table that
 isn't part of the star schema itself is prefixed `gold_` (e.g.
 `gold_daily_curve`) to distinguish it at a glance from `dim_*`/`fact_*`.
 
@@ -90,8 +93,14 @@ CORRA publishes under group `CORRA_METRICS` (not `AVG.INTWO` — that's the
 id of the rate sub-series *within* the group, not the group's own name).
 `stg_corra.sql`'s field names are verified against a real
 `/observations/group/CORRA_METRICS/json` response (2026-11-22).
-`gold_corra_vs_target.sql`'s fallback-rate thresholds are still
-placeholders pending real volume data.
+`gold_corra_vs_target.sql`'s `is_fallback_rate` is no longer a guessed
+threshold: per the Bank's published methodology (bankofcanada.ca/rates/
+interest-rates/corra/methodology-calculating-corra/), fallback triggers
+purely on trimmed volume falling below a minimum threshold — itself
+defined as `max($3B, 30% of the trailing 5-day average trimmed volume)` —
+submitter count is not part of the Bank's own trigger. The Bank publishes
+that day's resolved threshold directly as `CORRA_MINIMUM_VOLUME_THRESHOLD`,
+so the gold model just compares two real published numbers.
 
 ## PCA (feature 6)
 `jobs/pca_curve_factors.py` runs as a single Databricks Python job task
@@ -103,11 +112,20 @@ loading shapes), not auto-detected. `gold_pca_curve_factors.sql` is a thin
 pass-through so it shows up in dbt's lineage/docs.
 
 ## dim_policy_event maintenance
-There's no Valet series for the decision calendar. `dbt/seeds/
-dim_policy_event_seed.csv` currently holds placeholder rows — replace them
-with the Bank's verified published "Schedule for Fixed Announcement Dates"
-before trusting this table, and re-check it once a year when the Bank
-publishes the next year's schedule.
+There's no Valet series for the decision calendar, so `dbt/seeds/
+dim_policy_event_seed.csv` is manually compiled (81 rows, 2017-01-18
+through 2026-10-28) from the Bank's "Schedule for Fixed Announcement
+Dates" press releases and individual decision releases — never derived
+from V39079 rate changes, which would silently drop every hold. Verified
+by replaying `action`/`size_bps` cumulatively against the known overnight
+rate path (0.50% start-2017 -> 1.75% end-2018 -> 0.25% COVID low -> 5.00%
+mid-2023 peak -> 2.25% late-2025 -> 2.50% after the 2026-10-28 hike — all
+checkpoints match). The three March 2020 COVID-era cuts (03-04 scheduled,
+03-13 and 03-27 unscheduled inter-meeting) use the Bank's *announcement*
+date, not the settlement/effective date Valet reports (pre-2021, these
+were same-day; from 2021 on, effective date is one business day later) —
+see the per-row `notes` column for the unscheduled ones. Needs a yearly
+top-up once the Bank publishes next year's schedule (usually each July).
 
 ## Optional stretch: Power BI
 Not part of the core build (dropped — no Microsoft work/school account

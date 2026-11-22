@@ -2,7 +2,7 @@ name: One-time historical backfill
 
 # Manual only — never on a schedule. Run this once before the first
 # `dbt run-operation land_bronze_files` / `dbt build`, so the backfill
-# file exists at /Volumes/fmc/bronze/raw_valet/_backfill before that macro
+# file exists at /Volumes/financial_market_curve/bronze/raw_valet/_backfill before that macro
 # tries to read it. Safe to re-run later (each series' file is overwritten
 # in place, not appended).
 on:

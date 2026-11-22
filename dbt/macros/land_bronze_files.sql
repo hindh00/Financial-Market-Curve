@@ -1,8 +1,9 @@
 {% macro land_bronze_files() %}
 {#
   Bridges the raw JSON snapshots in the Unity Catalog Volume
-  (/Volumes/fmc/bronze/raw_valet) into a queryable Delta table
-  (fmc.bronze.raw_observations), since Volumes hold files, not tables.
+  (/Volumes/<catalog_name>/bronze/raw_valet) into a queryable Delta table
+  (<catalog_name>.bronze.raw_observations), since Volumes hold files, not
+  tables. <catalog_name> is the var('catalog_name') set in dbt_project.yml.
 
   Run via `dbt run-operation land_bronze_files` as the first task in the
   daily Databricks Job, before `dbt build` — see docs/architecture.md for
@@ -28,7 +29,7 @@
   derive pull_date per-row from each observation's own date instead).
 #}
 {% set sql %}
-  CREATE OR REPLACE TABLE fmc.bronze.raw_observations AS
+  CREATE OR REPLACE TABLE {{ var('catalog_name') }}.bronze.raw_observations AS
   SELECT
     get_json_object(value, '$.series_id') AS series_id,
     CAST(get_json_object(value, '$.pull_date') AS DATE) AS pull_date,
@@ -44,7 +45,7 @@
     _metadata.file_path AS source_file_path,
     _metadata.file_modification_time AS file_modified_at
   FROM read_files(
-    '/Volumes/fmc/bronze/raw_valet',
+    '/Volumes/{{ var('catalog_name') }}/bronze/raw_valet',
     format => 'text',
     wholeText => true
   )
@@ -68,26 +69,27 @@
     _metadata.file_path AS source_file_path,
     _metadata.file_modification_time AS file_modified_at
   FROM read_files(
-    '/Volumes/fmc/bronze/raw_valet/_backfill',
+    '/Volumes/{{ var('catalog_name') }}/bronze/raw_valet/_backfill',
     format => 'text',
     wholeText => true
   )
 {% endset %}
 
 {% do run_query(sql) %}
-{% do log("Landed bronze files into fmc.bronze.raw_observations", info=True) %}
+{% do log("Landed bronze files into " ~ var('catalog_name') ~ ".bronze.raw_observations", info=True) %}
 {% endmacro %}
 
 
 {% macro land_dq_results_files() %}
 {#
   Bridges the Python-side DQ check results (ingestion/land_dq_results.py)
-  from /Volumes/fmc/bronze/raw_valet/_dq_results into a queryable table.
-  Kept separate from land_bronze_files() because the envelope shape is
-  different (a `results` array of check rows, not an observations array).
+  from /Volumes/<catalog_name>/bronze/raw_valet/_dq_results into a
+  queryable table. Kept separate from land_bronze_files() because the
+  envelope shape is different (a `results` array of check rows, not an
+  observations array).
 #}
 {% set sql %}
-  CREATE OR REPLACE TABLE fmc.bronze.raw_dq_results AS
+  CREATE OR REPLACE TABLE {{ var('catalog_name') }}.bronze.raw_dq_results AS
   SELECT
     CAST(get_json_object(value, '$.pull_date') AS DATE) AS landed_pull_date,
     get_json_object(value, '$.pull_timestamp_utc') AS pull_timestamp_utc,
@@ -98,12 +100,12 @@
       )
     ) AS check_result
   FROM read_files(
-    '/Volumes/fmc/bronze/raw_valet/_dq_results',
+    '/Volumes/{{ var('catalog_name') }}/bronze/raw_valet/_dq_results',
     format => 'text',
     wholeText => true
   )
 {% endset %}
 
 {% do run_query(sql) %}
-{% do log("Landed DQ result files into fmc.bronze.raw_dq_results", info=True) %}
+{% do log("Landed DQ result files into " ~ var('catalog_name') ~ ".bronze.raw_dq_results", info=True) %}
 {% endmacro %}

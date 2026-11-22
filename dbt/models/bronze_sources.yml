@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: bronze
-    database: fmc
+    database: "{{ var('catalog_name') }}"
     schema: bronze
     tables:
       - name: raw_observations

@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: gold_py
-    database: fmc
+    database: "{{ var('catalog_name') }}"
     schema: gold
     tables:
       - name: pca_curve_factors_raw

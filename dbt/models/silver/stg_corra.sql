@@ -40,6 +40,7 @@ select
     max(case when field_name = 'CORRA_RATE_AT_PERCENTILE_75' then value end) as corra_p75,
     max(case when field_name = 'CORRA_RATE_AT_PERCENTILE_95' then value end) as corra_p95,
     max(case when field_name = 'CORRA_TRIMMED_VOLUME' then value end) as volume,
+    max(case when field_name = 'CORRA_MINIMUM_VOLUME_THRESHOLD' then value end) as min_volume_threshold,
     max(case when field_name = 'CORRA_NUMBER_OF_SUBMITTERS' then value end) as unique_submitters
 from parsed
 group by observation_date, pull_date, pull_timestamp_utc

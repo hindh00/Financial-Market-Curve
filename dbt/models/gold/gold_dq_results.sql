@@ -20,6 +20,11 @@ from {{ ref('dq_referential_integrity') }}
 
 union all
 
+select check_name, observation_date, series_id, tenor, pull_date, status, severity, details
+from {{ ref('dq_jump_check') }}
+
+union all
+
 select
     check_name,
     observation_date,

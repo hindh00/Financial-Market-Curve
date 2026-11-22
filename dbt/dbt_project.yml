@@ -11,13 +11,26 @@ macro-paths: ["macros"]
 clean-targets: ["target", "dbt_packages"]
 
 vars:
-  # Must be <= ingestion/config.py's BACKFILL_START_DATE, or backfilled
-  # fact rows before this date will fail the referential-integrity DQ
-  # check (no matching dim_date row to join to).
-  backfill_start_date: "2017-01-01"
+  # The Unity Catalog catalog this whole project reads/writes — single
+  # source of truth so the name only needs to be set in one place
+  # (matches what you actually name it in Phase 0 setup).
+  catalog_name: "financial_market_curve"
 
-  # >4 std-dev (robust) jump threshold, shared between dbt jump-check models
-  # and ingestion/dq_checks.py's Python equivalent — keep these in sync.
+  # Reads the same BACKFILL_START_DATE env var ingestion/backfill.py
+  # already prefers over its own constant, so setting that one env var
+  # (in .env locally, or as a GitHub secret/var in CI) moves both sides at
+  # once — falls back to 2017-01-01 if unset, matching ingestion/config.py.
+  # If this ever drifts earlier than what's actually been backfilled,
+  # backfilled fact rows before it will fail the referential-integrity DQ
+  # check (no matching dim_date row to join to).
+  backfill_start_date: "{{ env_var('BACKFILL_START_DATE', '2017-01-01') }}"
+
+  # >4 std-dev (robust) jump threshold — single-bad-datapoint DQ check.
+  # Consumed by dbt/models/gold/dq_checks/dq_jump_check.sql (the live
+  # check). ingestion/dq_checks.py's check_jump() is a Python equivalent
+  # with the same median/MAD formula, kept for its unit tests and as a
+  # reference implementation, but it isn't wired into the pull-time
+  # pipeline — the dbt model is what actually runs.
   jump_threshold_std: 4.0
 
   # Benchmark-switch heuristic (gold_benchmark_switch_log): a tenor's daily
@@ -27,12 +40,6 @@ vars:
   # than a market-wide move. Calibrate against real data once Phase 1 has
   # enough history to see what an actual switch day looks like.
   benchmark_switch_abs_threshold: 0.15
-
-  # CORRA fallback-rate heuristic (gold_corra_vs_target) — placeholder
-  # thresholds; replace with the Bank's actual published fallback criteria
-  # once real CORRA volume/submitter data is observed.
-  corra_fallback_volume_threshold: 5000
-  corra_fallback_submitter_threshold: 5
 
 models:
   financial_market_curve:

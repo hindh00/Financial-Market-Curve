@@ -1,9 +1,17 @@
 {#
   CORRA-minus-target in bps, plus the percentile band and volume Lakeview's
   "Money market plumbing" page charts. is_fallback_rate flags days where
-  volume/submitter counts are too thin for CORRA to be calculated from
-  actual trades (the Bank falls back to a fixed rate on those days) —
-  thresholds are placeholders, see the note in dbt_project.yml's vars.
+  trimmed trading volume was too thin for CORRA to be calculated from
+  actual trades, so the Bank published its fallback rate instead (target
+  rate + average CORRA-target spread over the prior 5 business days).
+
+  Per the Bank's published methodology (bankofcanada.ca/rates/interest-
+  rates/corra/methodology-calculating-corra/), the trigger is volume-only
+  — "trimmed volume below the minimum volume threshold", itself defined as
+  max($3B, 30% of the trailing 5-day average trimmed volume) — submitter
+  count is NOT part of the Bank's own trigger. The Bank publishes that
+  day's resolved threshold directly as CORRA_MINIMUM_VOLUME_THRESHOLD, so
+  this compares two real published numbers rather than a guessed constant.
 #}
 
 with corra as (
@@ -16,6 +24,7 @@ with corra as (
         corra_p75,
         corra_p95,
         volume,
+        min_volume_threshold,
         unique_submitters,
         row_number() over (partition by observation_date order by pull_date desc) as pull_rank
     from {{ ref('stg_corra') }}
@@ -41,11 +50,9 @@ select
     lc.corra_p75,
     lc.corra_p95,
     lc.volume,
+    lc.min_volume_threshold,
     lc.unique_submitters,
-    (
-        lc.volume < {{ var('corra_fallback_volume_threshold') }}
-        or lc.unique_submitters < {{ var('corra_fallback_submitter_threshold') }}
-    ) as is_fallback_rate
+    lc.volume < lc.min_volume_threshold as is_fallback_rate
 from latest_corra lc
 left join target t
     on lc.observation_date = t.observation_date

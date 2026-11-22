@@ -39,7 +39,7 @@ with exploded as (
             )
         ) as obs
     from {{ source('bronze', 'raw_observations') }}
-    where series_id != 'AVG.INTWO'
+    where series_id != 'CORRA_METRICS'
 ),
 
 parsed as (
