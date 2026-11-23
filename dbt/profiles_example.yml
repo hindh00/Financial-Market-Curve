@@ -12,7 +12,15 @@ financial_market_curve:
       schema: silver # default; most models override via +schema in dbt_project.yml
       host: "{{ env_var('DATABRICKS_HOST') }}"
       http_path: "{{ env_var('DATABRICKS_HTTP_PATH') }}"
-      token: "{{ env_var('DATABRICKS_TOKEN') }}"
+      # OAuth U2M, not a PAT: this Free Edition workspace rejects personal
+      # access tokens outright (confirmed via direct REST calls returning
+      # 403 "Invalid access token" regardless of scope), while OAuth works
+      # immediately. First `dbt debug`/`dbt run` on a machine opens a
+      # browser once for login/consent; dbt-databricks caches the resulting
+      # token locally after that. Only works for interactive/local use —
+      # GitHub Actions can't complete a browser consent flow, so CI's dbt
+      # job needs a different auth path (tracked separately).
+      auth_type: oauth
       # Kept modest deliberately: Free Edition caps the account at 5
       # concurrent job tasks, and dbt's own thread pool runs inside
       # whichever single job task invokes it.
