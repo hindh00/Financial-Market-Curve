@@ -27,3 +27,7 @@ tests/
 !/README.md
 !/docs/architecture.md
 !/docs/data_dictionary.md
+
+# Running session log (errors/fixes/decisions across Claude Code sessions) —
+# already caught by *.md above, listed explicitly for clarity
+SESSION_LOG.md
