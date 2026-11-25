@@ -7,8 +7,9 @@ Bank of Canada Valet API
   -> Databricks Job (sequential tasks, respects the 5-concurrent-task cap):
        1. dbt run-operation land_bronze_files      -> financial_market_curve.bronze.raw_observations
           dbt run-operation land_dq_results_files  -> financial_market_curve.bronze.raw_dq_results
-       2. dbt build   (silver -> gold, incl. dbt tests)
+       2. dbt build --exclude gold_pca_curve_factors   (silver -> gold, incl. dbt tests)
        3. python jobs/pca_curve_factors.py       -> financial_market_curve.gold.pca_curve_factors_raw
+       4. dbt run --select gold_pca_curve_factors      (thin pass-through, same-day freshness)
   -> Databricks AI/BI (Lakeview) Dashboards, 5 pages, in-browser
 ```
 
@@ -110,6 +111,26 @@ session is attached to whatever compute runs a serverless Python task.
 PC1/PC2/PC3 are labeled level/slope/curvature by convention (typical
 loading shapes), not auto-detected. `gold_pca_curve_factors.sql` is a thin
 pass-through so it shows up in dbt's lineage/docs.
+
+Chicken-and-egg: the pass-through model reads `gold.pca_curve_factors_raw`,
+which the PCA task only writes *after* the main `dbt build` — so the main
+build always runs with `--exclude gold_pca_curve_factors`, and a final
+`dbt run --select gold_pca_curve_factors` task (step 4 above) materializes
+it same-day once the PCA task has run. Without that 4th task, the
+pass-through would always be a day stale (built from yesterday's PCA
+output) or fail outright on a workspace that's never run the PCA task yet.
+
+The PCA task needs `DATABRICKS_HOST`/`DATABRICKS_HTTP_PATH`/
+`DATABRICKS_TOKEN` as task environment variables even though it runs
+inside Databricks — it deliberately goes through `databricks-sql-connector`
+rather than a Spark session (see the module docstring), so it still needs
+a token the same way the GitHub Actions ingestion job does. Store the
+token as a Databricks secret (`databricks secrets create-scope` /
+`put-secret`) and reference it from the task config as
+`{{secrets/<scope>/<key>}}` rather than pasting it in plaintext — reuse the
+same token already proven to work for the GitHub Actions Jobs API trigger,
+since freshly-generated PATs get rejected outright on this workspace (see
+`SESSION_LOG.md`'s 2026-11-23 entry).
 
 ## dim_policy_event maintenance
 There's no Valet series for the decision calendar, so `dbt/seeds/

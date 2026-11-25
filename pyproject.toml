@@ -1,3 +1,16 @@
+[project]
+name = "financial-market-curve"
+version = "0.1.0"
+requires-python = ">=3.11"
+# Mirrors jobs/requirements.txt — this is what the Databricks Workflows
+# "Project" environment (Configure environment -> ./pyproject.toml) installs
+# for the pca_curve_factors Python task. Keep both files in sync.
+dependencies = [
+    "databricks-sql-connector>=3.0,<4",
+    "pandas>=2.0,<3",
+    "numpy>=1.26,<3",
+]
+
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
