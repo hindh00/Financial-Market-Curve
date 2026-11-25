@@ -15,22 +15,14 @@ showing the DQ checks that most portfolio projects skip:
 
 ![Today dashboard](docs/screenshots/today_dashboard.png)
 
-*(Drop a screenshot of the live "Today" page at
-`docs/screenshots/today_dashboard.png` — policy rate / yield / FX counter
-tiles, the 3-vintage yield curve chart, and the CORRA-freshness status
-table.)*
+https://dbc-66d59558-d082.cloud.databricks.com/dashboardsv3/01f1e86b38051ec1a78f91dcb9a53f69/published?o=7474655803730221
 
 ## Data quality, not just data
-
-![DQ findings](docs/screenshots/dq_findings.png)
 
 Every build runs a DQ suite (curve-integrity checks, holiday-aware
 completeness, revision detection, a median/MAD jump check, schema-drift
 detection) and materializes the results into a queryable table rather than
 just pass/failing silently in CI.
-
-*(Drop a screenshot of `gold_dq_results` or the freshness badge at
-`docs/screenshots/dq_findings.png`.)*
 
 ## Status
 
@@ -69,11 +61,10 @@ Bank of Canada Valet API
   -> Databricks AI/BI (Lakeview) Dashboards, 5 pages
 ```
 
-See [docs/architecture.md](docs/architecture.md) for why each piece is
-where it is, and [docs/data_dictionary.md](docs/data_dictionary.md) for
+See [docs/architecture.md](docs/architecture.md) for more details, and [docs/data_dictionary.md](docs/data_dictionary.md) for
 the gold-layer tables.
 
-## Design decisions worth knowing about
+## Design decisions
 
 - **Decision calendar is a seed, not derived data.** Deriving "decision
   days" from rate changes would silently drop every hold — the calendar
