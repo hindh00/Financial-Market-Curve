@@ -2,12 +2,6 @@
 name = "financial-market-curve"
 version = "0.1.0"
 requires-python = ">=3.11"
-
-[tool.databricks.environment]
-# Required by Databricks serverless "Project" environments (Configure
-# environment -> ./pyproject.toml) — without this, the job run fails with
-# INVALID_PARAMETER_VALUE before the pca_curve_factors task even starts.
-environment_version = "2"
 # Mirrors jobs/requirements.txt — this is what the Databricks Workflows
 # "Project" environment (Configure environment -> ./pyproject.toml) installs
 # for the pca_curve_factors Python task. Keep both files in sync.
@@ -16,6 +10,12 @@ dependencies = [
     "pandas>=2.0,<3",
     "numpy>=1.26,<3",
 ]
+
+[tool.databricks.environment]
+# Required by Databricks serverless "Project" environments (Configure
+# environment -> ./pyproject.toml) — without this, the job run fails with
+# INVALID_PARAMETER_VALUE before the pca_curve_factors task even starts.
+environment_version = "2"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
