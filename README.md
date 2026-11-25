@@ -1,15 +1,59 @@
 # Financial Market Curve
 
-A Bank of Canada Valet API data pipeline and dashboard answering three
-market-structure questions, plus a Data Health page showing the DQ checks
-that most portfolio projects skip:
+A data pipeline and dashboard built on the Bank of Canada's Valet API,
+answering three market-structure questions — plus a Data Health page
+showing the DQ checks that most portfolio projects skip:
 
 1. **What were markets expecting?** The yield curve, and how far the
    2-year yield sits from the policy rate.
 2. **Did the Bank surprise them?** An event study of every decision day
-   (holds included).
+   (holds included — not just the rate changes).
 3. **Did the policy rate reach the money market?** CORRA vs. the target
    rate, shown as a distribution, not a single line.
+
+## Live dashboard
+
+![Today dashboard](docs/screenshots/today_dashboard.png)
+
+*(Drop a screenshot of the live "Today" page at
+`docs/screenshots/today_dashboard.png` — policy rate / yield / FX counter
+tiles, the 3-vintage yield curve chart, and the CORRA-freshness status
+table.)*
+
+## Data quality, not just data
+
+![DQ findings](docs/screenshots/dq_findings.png)
+
+Every build runs a DQ suite (curve-integrity checks, holiday-aware
+completeness, revision detection, a median/MAD jump check, schema-drift
+detection) and materializes the results into a queryable table rather than
+just pass/failing silently in CI.
+
+*(Drop a screenshot of `gold_dq_results` or the freshness badge at
+`docs/screenshots/dq_findings.png`.)*
+
+## Status
+
+**Working end to end:**
+- Daily ingestion (GitHub Actions cron → Unity Catalog Volume), chained
+  directly into a Databricks Workflows job (dbt build + DQ checks) via the
+  Jobs API — no second, independently-drifting schedule.
+- dbt silver → gold star schema, decision calendar (81 manually-verified
+  BoC announcements, 2017–2026), CORRA-vs-target with real Bank fallback
+  methodology, benchmark-bond switch detection, revision tracking.
+- "Today" Lakeview dashboard page — live counter tiles, yield curve
+  comparison chart, DQ status table.
+
+**In progress:**
+- PCA decomposition of yield-curve moves (level/slope/curvature) —
+  `jobs/pca_curve_factors.py` is written and wired into the Databricks job
+  chain, currently being debugged.
+- Remaining 4 dashboard pages (curve over time, decision days, money
+  market plumbing, data health) — specs are written in
+  `dashboards/lakeview/`, not yet built in the workspace UI.
+- Headless CI (`dbt build` on every push) — blocked on Databricks service
+  principal / OAuth M2M auth, since this workspace rejects freshly-minted
+  personal access tokens; currently gated off via a repo variable.
 
 ## Architecture
 
@@ -17,8 +61,11 @@ that most portfolio projects skip:
 Bank of Canada Valet API
   -> GitHub Actions (daily cron, Python)
   -> Unity Catalog Volume (bronze, raw JSON + pull timestamp)
-  -> dbt on a Databricks SQL warehouse (silver -> gold, star schema + DQ results)
-  -> a Databricks Python job (PCA)
+  -> Databricks Workflows job (sequential tasks):
+       dbt run-operation land_bronze_files / land_dq_results_files
+       dbt build --exclude gold_pca_curve_factors
+       python jobs/pca_curve_factors.py
+       dbt run --select gold_pca_curve_factors
   -> Databricks AI/BI (Lakeview) Dashboards, 5 pages
 ```
 
@@ -26,14 +73,36 @@ See [docs/architecture.md](docs/architecture.md) for why each piece is
 where it is, and [docs/data_dictionary.md](docs/data_dictionary.md) for
 the gold-layer tables.
 
+## Design decisions worth knowing about
+
+- **Decision calendar is a seed, not derived data.** Deriving "decision
+  days" from rate changes would silently drop every hold — the calendar
+  is manually compiled from the Bank's published schedule instead.
+- **RRB benchmark is resolved dynamically, every run**, not hardcoded —
+  issuance stopped in 2022, so the "current" benchmark bond is a Bank
+  designation that can't be assumed stable indefinitely.
+- **Revision tracking starts from day one of the daily cron**, keyed on
+  `(observation_date, pull_date)` — not something that can be
+  retrofitted onto backfilled history, since the historical endpoint only
+  returns already-settled values.
+- **CORRA is shown as a distribution** (percentile band + volume +
+  fallback-rate flag), since a single daily print hides how thin the
+  underlying repo market was that day.
+
+## Tech stack
+
+Python (ingestion, DQ logic, PCA) · GitHub Actions (cron, CI) · Databricks
+(Unity Catalog, serverless SQL warehouse, Workflows jobs) · dbt-databricks
+(silver/gold transforms + tests) · Databricks AI/BI (Lakeview) dashboards.
+
 ## Getting started
 
 1. **Phase 0** — [docs/setup_databricks_free_edition.md](docs/setup_databricks_free_edition.md): one-time Databricks account/catalog/warehouse setup, then add the resulting secrets to this repo's GitHub Actions settings.
-2. **Phase 1-2** — the ingestion pipeline and its tests already work with no cloud account: `pip install -r requirements-dev.txt && pytest tests/ -v`.
-3. **Historical backfill (run once, before step 4)** — trigger `.github/workflows/backfill.yml` manually (or `python -m ingestion.backfill`) to pull each series' full history, so the dashboards aren't empty for months. `land_bronze_files()` reads this path unconditionally, so it must exist before the first dbt build.
-4. **Turn on the daily cron** — once secrets exist, trigger `.github/workflows/ingest.yml` manually once to confirm it lands data, then let the daily schedule take over.
-5. **Phase 3-5** — `dbt/` builds silver/gold against your warehouse (`cd dbt && dbt seed && dbt run-operation land_bronze_files && dbt run-operation land_dq_results_files && dbt build`).
-6. **Phase 6** — build the dashboards in the Databricks workspace UI following [dashboards/lakeview/](dashboards/lakeview/).
+2. **Ingestion + tests** work with no cloud account: `pip install -r requirements-dev.txt && pytest tests/ -v`.
+3. **Historical backfill (once, before step 4)** — trigger `.github/workflows/backfill.yml` manually, or `python -m ingestion.backfill`.
+4. **Turn on the daily cron** — trigger `.github/workflows/ingest.yml` manually once to confirm it lands data, then let the schedule take over.
+5. **dbt build** — `cd dbt && dbt seed && dbt run-operation land_bronze_files && dbt run-operation land_dq_results_files && dbt build`.
+6. **Dashboards** — build in the Databricks workspace UI following [dashboards/lakeview/](dashboards/lakeview/).
 
 ## Repo layout
 
@@ -43,10 +112,3 @@ the gold-layer tables.
 - `jobs/` — the PCA Python job (not expressible in dbt SQL).
 - `dashboards/lakeview/` — build specs for the 5 dashboard pages.
 - `docs/` — setup, architecture, and data dictionary.
-
-## Known placeholders
-
-A few things are deliberately left as placeholders pending real data or
-manual verification — see the "Known placeholders" section of
-[docs/data_dictionary.md](docs/data_dictionary.md) before trusting the
-numbers end to end.

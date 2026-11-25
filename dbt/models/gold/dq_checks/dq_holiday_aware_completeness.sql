@@ -7,7 +7,9 @@
 with business_days as (
     select date_day
     from {{ ref('dim_date') }}
-    where is_business_day and date_day <= current_date()
+    -- < not <=: today hasn't necessarily been published yet when this runs,
+    -- so only check days that have had a full day to actually land.
+    where is_business_day and date_day < current_date()
 ),
 
 tracked_series as (
