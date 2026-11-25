@@ -27,6 +27,49 @@ jobs:
           DATABRICKS_VOLUME_PATH: ${{ secrets.DATABRICKS_VOLUME_PATH }}
         run: python -m ingestion.pull_series
 
+      # Chains the dbt build directly off this job instead of relying on a
+      # second, independent schedule on the Databricks side — GitHub's own
+      # cron already drifts (confirmed runs landing hours off the configured
+      # 13:00 UTC target), so a separate Databricks schedule would just be a
+      # second unreliable clock to keep in sync with the first. Triggering
+      # run-now here means the dbt build always follows the Valet pull by
+      # the same few minutes, whenever this job actually fires.
+      - name: Trigger Databricks dbt build job
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+          DATABRICKS_JOB_ID: ${{ vars.DATABRICKS_JOB_ID }}
+        run: |
+          set -euo pipefail
+
+          run_id=$(curl -sf -X POST "$DATABRICKS_HOST/api/2.1/jobs/run-now" \
+            -H "Authorization: Bearer $DATABRICKS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"job_id\": $DATABRICKS_JOB_ID}" \
+            | python3 -c "import sys, json; print(json.load(sys.stdin)['run_id'])")
+
+          echo "Triggered Databricks job run $run_id, polling for completion..."
+
+          for i in $(seq 1 60); do
+            sleep 15
+            status=$(curl -sf "$DATABRICKS_HOST/api/2.1/jobs/runs/get?run_id=$run_id" \
+              -H "Authorization: Bearer $DATABRICKS_TOKEN")
+            life_cycle_state=$(echo "$status" | python3 -c "import sys, json; print(json.load(sys.stdin)['state']['life_cycle_state'])")
+
+            if [ "$life_cycle_state" = "TERMINATED" ] || [ "$life_cycle_state" = "SKIPPED" ] || [ "$life_cycle_state" = "INTERNAL_ERROR" ]; then
+              result_state=$(echo "$status" | python3 -c "import sys, json; print(json.load(sys.stdin)['state'].get('result_state', 'UNKNOWN'))")
+              echo "Databricks job run finished: $life_cycle_state / $result_state"
+              if [ "$result_state" != "SUCCESS" ]; then
+                echo "::error::Databricks dbt build job did not succeed ($result_state) — see run $run_id in the Databricks workspace."
+                exit 1
+              fi
+              exit 0
+            fi
+          done
+
+          echo "::error::Databricks job run $run_id did not finish within 15 minutes of polling."
+          exit 1
+
       - name: Upload run log on failure
         if: failure()
         uses: actions/upload-artifact@v4
