@@ -1,9 +1,7 @@
 {#
   A gap on a business day is an error; a gap on a weekend/holiday is
-  expected (and not checked here at all, since `business_days` already
-  excludes them). Scoped to fact_observation's series — CORRA's
-  completeness is implicitly covered by stg_corra/gold_corra_vs_target
-  having a row for the day, not checked separately here.
+  expected. Scoped to fact_observation's series only — CORRA's
+  completeness is covered separately via gold_corra_vs_target.
 #}
 
 with business_days as (

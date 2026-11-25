@@ -67,12 +67,8 @@ class ValetClient:
         start_date: str | None = None,
         end_date: str | None = None,
     ) -> ValetResponse:
-        """GET /observations/{series_name}/json.
-
-        Either pass `recent` (the daily pull's rolling window) or
-        `start_date`/`end_date` (a one-off historical range, used by
-        ingestion/backfill.py) — not both.
-        """
+        """GET /observations/{series_name}/json. Pass either `recent` or
+        `start_date`/`end_date`, not both."""
         params = self._observation_params(recent, start_date, end_date)
         return self._get(f"observations/{series_name}/json", params=params)
 

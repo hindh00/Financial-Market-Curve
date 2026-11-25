@@ -27,13 +27,9 @@ jobs:
           DATABRICKS_VOLUME_PATH: ${{ secrets.DATABRICKS_VOLUME_PATH }}
         run: python -m ingestion.pull_series
 
-      # Chains the dbt build directly off this job instead of relying on a
-      # second, independent schedule on the Databricks side — GitHub's own
-      # cron already drifts (confirmed runs landing hours off the configured
-      # 13:00 UTC target), so a separate Databricks schedule would just be a
-      # second unreliable clock to keep in sync with the first. Triggering
-      # run-now here means the dbt build always follows the Valet pull by
-      # the same few minutes, whenever this job actually fires.
+      # Chains the dbt build directly off this job instead of a second,
+      # independent Databricks schedule — GitHub's own cron already drifts,
+      # so this keeps both steps in sync with each other regardless.
       - name: Trigger Databricks dbt build job
         env:
           DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}

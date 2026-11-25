@@ -1,17 +1,8 @@
 {#
   CORRA-minus-target in bps, plus the percentile band and volume Lakeview's
-  "Money market plumbing" page charts. is_fallback_rate flags days where
-  trimmed trading volume was too thin for CORRA to be calculated from
-  actual trades, so the Bank published its fallback rate instead (target
-  rate + average CORRA-target spread over the prior 5 business days).
-
-  Per the Bank's published methodology (bankofcanada.ca/rates/interest-
-  rates/corra/methodology-calculating-corra/), the trigger is volume-only
-  — "trimmed volume below the minimum volume threshold", itself defined as
-  max($3B, 30% of the trailing 5-day average trimmed volume) — submitter
-  count is NOT part of the Bank's own trigger. The Bank publishes that
-  day's resolved threshold directly as CORRA_MINIMUM_VOLUME_THRESHOLD, so
-  this compares two real published numbers rather than a guessed constant.
+  "Money market plumbing" page charts. is_fallback_rate compares against
+  the Bank's own published CORRA_MINIMUM_VOLUME_THRESHOLD (volume-only
+  trigger per the Bank's methodology — submitter count isn't part of it).
 #}
 
 with corra as (

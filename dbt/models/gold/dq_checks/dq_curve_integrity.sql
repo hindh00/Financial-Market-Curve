@@ -1,9 +1,7 @@
 {#
-  Every active benchmark-bond tenor should be present for every business
-  day that's already happened. Also backed by the singular test
-  dbt/tests/assert_curve_completeness.sql, which fails the dbt run outright
-  on any gap — this model is the same check materialized as pass/fail rows
-  so the Data Health page can show history, not just today's build status.
+  Every active benchmark-bond tenor should exist for every business day
+  so far. Materializes the same check as dbt/tests/assert_curve_completeness.sql
+  as pass/fail rows, so Data Health can show history, not just build status.
 #}
 
 with business_days as (

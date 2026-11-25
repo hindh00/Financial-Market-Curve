@@ -1,11 +1,8 @@
 {#
-  Every decision (holds included) joined to the same-day move in the 2yr
-  and 10yr yields and USD/CAD. change_2y/change_10y are nulled out (not
-  just flagged) when that day was also flagged as a benchmark-switch day
-  for that tenor — a bond roll isn't a market reaction to the decision, so
-  it shouldn't count as one in the scatter/outlier chart on the Decision
-  Days page. reaction_excludes_switch_artifact records when that happened
-  so the dashboard can show it was excluded rather than just showing a gap.
+  Every decision (holds included) joined to the same-day move in 2yr/10yr
+  yields and USD/CAD. change_2y/change_10y are nulled (not just flagged)
+  on a benchmark-switch day, since a bond roll isn't a market reaction;
+  reaction_excludes_switch_artifact records when that happened.
 #}
 
 with yields as (

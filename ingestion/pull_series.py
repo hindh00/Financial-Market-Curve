@@ -34,9 +34,8 @@ class PullResult:
 def pull_and_land(client: ValetClient, dbx: DatabricksConfig, pull_date: str) -> list[PullResult]:
     results: list[PullResult] = []
 
-    # Dynamically resolve the RRB benchmark first; its resolution metadata
-    # rides along in every RRB snapshot so a future benchmark change is
-    # auditable from the landed data itself, not just from this script's logs.
+    # Resolve the RRB benchmark first so its resolution metadata rides along
+    # in every RRB snapshot, auditable from the data itself.
     try:
         rrb = resolve_current_rrb_series(client)
         logger.info("Resolved RRB benchmark: %s (%s)", rrb.series_id, rrb.description)
@@ -81,10 +80,8 @@ def pull_and_land(client: ValetClient, dbx: DatabricksConfig, pull_date: str) ->
         logger.error("Failed to pull CORRA group %s: %s", CORRA_GROUP_NAME, exc)
         results.append(PullResult(series_id=CORRA_GROUP_NAME, ok=False, error=str(exc)))
 
-    # Python-shaped DQ checks (freshness, schema drift) — see
-    # ingestion/land_dq_results.py for why these can't be dbt SQL tests.
-    # Landed alongside the data so gold_dq_results.sql can union them with
-    # the SQL-shaped checks.
+    # Python-shaped DQ checks (see land_dq_results.py), landed alongside the
+    # data so gold_dq_results.sql can union them with the SQL-shaped checks.
     dq_results = build_dq_results_for_pull(pull_date, single_series_observations, corra_observations)
     dq_envelope = {
         "pull_date": pull_date,

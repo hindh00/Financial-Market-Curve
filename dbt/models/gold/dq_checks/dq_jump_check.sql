@@ -1,21 +1,9 @@
 {#
-  Flags a single day's value change as a statistical outlier relative to
-  that series' own typical day-to-day change, mirroring
-  ingestion/dq_checks.py's check_jump(): a median/MAD-based robust
-  z-score, not mean/stdev, so one bad outlier doesn't inflate the baseline
-  it's being measured against and mask itself. threshold_std is
-  var('jump_threshold_std'); 0.6745 scales MAD to be comparable to a
-  standard deviation under normality (same constant check_jump() uses).
-
-  Benchmark-switch days are excluded entirely (not just from the stats,
-  from being flagged at all) — gold_benchmark_switch_log.sql already
-  explains those jumps, so this check would otherwise double-report the
-  same artifact under two different DQ rows.
-
-  Materialized as one pass/fail row per computable day-over-day change
-  (not just failures), matching dq_curve_integrity.sql /
-  dq_holiday_aware_completeness.sql, so the Data Health page can show
-  full history, not just the days something went wrong.
+  Mirrors ingestion/dq_checks.py's check_jump(): a median/MAD robust
+  z-score (resistant to the outlier inflating its own baseline), excluding
+  benchmark-switch days entirely since gold_benchmark_switch_log.sql
+  already explains those. Materialized as one row per computable
+  day-over-day change, not just failures, so Data Health shows full history.
 #}
 
 with latest_per_day as (

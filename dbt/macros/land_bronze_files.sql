@@ -1,32 +1,10 @@
 {% macro land_bronze_files() %}
 {#
-  Bridges the raw JSON snapshots in the Unity Catalog Volume
-  (/Volumes/<catalog_name>/bronze/raw_valet) into a queryable Delta table
-  (<catalog_name>.bronze.raw_observations), since Volumes hold files, not
-  tables. <catalog_name> is the var('catalog_name') set in dbt_project.yml.
-
-  Run via `dbt run-operation land_bronze_files` as the first task in the
-  daily Databricks Job, before `dbt build` — see docs/architecture.md for
-  the full job task chain. A full-refresh CREATE OR REPLACE is used rather
-  than incremental COPY INTO/Auto Loader: data volumes here are small
-  (a handful of series, one snapshot file per series per day), so the
-  simpler full rebuild is enough and avoids maintaining ingestion-state
-  tracking for a project this size.
-
-  payload_json is kept as a raw JSON string (not auto-inferred into a
-  struct) purely for auditability/schema-drift detection, since
-  single-series and group (CORRA) responses have different shapes.
-  observations_flat_json is what silver actually explodes — it's the
-  uniform (observation_date, field_name, value_raw) array that
-  ingestion/flatten.py already normalized both shapes into, so it parses
-  with one fixed schema regardless of which series/group it came from.
-
-  Unions two kinds of landed files at this same one-row-per-file grain:
-  daily snapshots (one pull_date per file, under the series_id folders)
-  and backfill files (ingestion/backfill.py, under /_backfill/ — one file
-  per series covering years of history, so there's no single meaningful
-  file-level pull_date; is_backfill=true tells stg_observations.sql to
-  derive pull_date per-row from each observation's own date instead).
+  Bridges the raw JSON snapshots in the Volume into a queryable Delta table,
+  since Volumes hold files, not tables. Run via `dbt run-operation
+  land_bronze_files` before `dbt build` — see docs/architecture.md. Unions
+  daily snapshots with backfill files (is_backfill=true, NULL pull_date since
+  one backfill file spans years — stg_observations.sql derives it per-row).
 #}
 {% set sql %}
   CREATE OR REPLACE TABLE {{ var('catalog_name') }}.bronze.raw_observations AS
@@ -83,10 +61,8 @@
 {% macro land_dq_results_files() %}
 {#
   Bridges the Python-side DQ check results (ingestion/land_dq_results.py)
-  from /Volumes/<catalog_name>/bronze/raw_valet/_dq_results into a
-  queryable table. Kept separate from land_bronze_files() because the
-  envelope shape is different (a `results` array of check rows, not an
-  observations array).
+  into a queryable table — separate from land_bronze_files() since the
+  envelope shape differs (a `results` array, not observations).
 #}
 {% set sql %}
   CREATE OR REPLACE TABLE {{ var('catalog_name') }}.bronze.raw_dq_results AS

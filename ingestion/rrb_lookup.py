@@ -1,15 +1,8 @@
-"""Resolve the current Real Return Bond benchmark series id dynamically.
-
-Why this can't be hardcoded: the government ceased issuing new RRBs in 2022,
-so the benchmark the Bank designates as "current" (currently the 2050-12-01,
-0.50% issue) is a fixed, aging bond with no replacement. The Bank could in
-principle redesignate a different RRB as the benchmark at any time, and this
-project's breakeven-inflation feature must stay correct if that happens
-rather than silently computing against a stale id.
-
-Strategy: call /lists/series/json and match on description text. If the
-match is ambiguous (zero or multiple candidates), fail loudly — a silent
-wrong pick would corrupt every downstream breakeven-inflation number.
+"""Resolve the current Real Return Bond benchmark series id dynamically —
+hardcoding it would go stale, since new RRB issuance ceased in 2022 and the
+Bank could redesignate the benchmark at any time. Matches on description text
+via /lists/series/json and fails loudly on zero or multiple candidates rather
+than risk a silent wrong pick corrupting every breakeven-inflation number.
 """
 
 from __future__ import annotations

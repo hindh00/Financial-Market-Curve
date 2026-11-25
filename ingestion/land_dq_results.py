@@ -1,12 +1,7 @@
 """Runs the Python-side DQ checks (freshness, schema drift) at pull time and
-lands their results into the Volume alongside the data, so dbt's
-gold_dq_results.sql can union them with the SQL-shaped checks (curve
-integrity, holiday-aware completeness, referential integrity — those stay
-dbt tests since they're naturally SQL-shaped).
-
-Called from pull_series.py once per daily run, after all series/group
-pulls — it has everything it needs from what was already fetched this run,
-without re-downloading anything.
+lands results into the Volume so gold_dq_results.sql can union them with the
+SQL-shaped dbt tests. Called once per daily run from pull_series.py, using
+data already fetched that run.
 """
 
 from __future__ import annotations

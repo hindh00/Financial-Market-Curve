@@ -1,11 +1,8 @@
 {#
   Market inflation expectations = nominal benchmark yield minus the RRB
-  real yield. The RRB benchmark is a fixed, aging bond (issuance ceased in
-  2022, see ingestion/rrb_lookup.py) with no newer issue to replace it, so
-  this metric's long-run trend is less trustworthy over time than a metric
-  built on a regularly-refreshed benchmark — caveat_text carries that note
-  through to any dashboard built on this table rather than hardcoding it
-  in Lakeview.
+  real yield. The RRB benchmark ages indefinitely (issuance ceased in 2022,
+  see rrb_lookup.py), so caveat_text carries that caveat through to any
+  dashboard built on this table rather than hardcoding it in Lakeview.
 #}
 
 with nominal as (

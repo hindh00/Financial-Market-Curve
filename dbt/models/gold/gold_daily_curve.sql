@@ -1,10 +1,7 @@
 {#
-  Long-format date x tenor yield table — feeds the "Curve over time"
-  heatmap and the "Today" page's curve-vs-1mo/1yr-ago comparison.
-  is_benchmark_switch_day rides along as a flag (not a filter) so the
-  dashboard can annotate/shade a switch day rather than silently hide a
-  real data point; jump/change calculations elsewhere are what actually
-  exclude switch days (see gold_decision_day_reactions.sql).
+  Long-format date x tenor yield table feeding the curve heatmap and
+  "Today" comparisons. is_benchmark_switch_day rides along as a flag, not
+  a filter, so the dashboard can annotate a switch day rather than hide it.
 #}
 
 select

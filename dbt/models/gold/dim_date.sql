@@ -1,13 +1,8 @@
 {#
-  The calendar spine is a pure construct (no raw data to type), so it's
-  built directly here rather than in silver — there's nothing silver would
-  add. Decision-day flags join in from dim_policy_event, which is why this
-  lives in gold rather than silver.
-
-  start_date matches backfill_start_date (dbt_project.yml vars), which
-  must itself match ingestion/config.py's BACKFILL_START_DATE — otherwise
-  backfilled fact rows before this spine's start would have no dim_date
-  row to join to and fail the referential-integrity DQ check.
+  Pure calendar construct, built directly in gold since decision-day flags
+  join in from dim_policy_event. start_date must match
+  ingestion/config.py's BACKFILL_START_DATE, or backfilled rows before it
+  fail the referential-integrity DQ check.
 #}
 
 with spine as (

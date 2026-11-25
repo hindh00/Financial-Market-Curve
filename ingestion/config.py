@@ -1,25 +1,16 @@
-"""Static registry of Valet API series/groups this project tracks.
-
-The Real Return Bond benchmark is deliberately NOT listed here — see
-rrb_lookup.py. The Bank periodically re-designates which RRB issue is the
-"current" benchmark, and issuance of new RRBs ceased in 2022, so hardcoding
-an id here would silently go stale.
+"""Static registry of Valet API series/groups this project tracks. The Real
+Return Bond benchmark is deliberately excluded — see rrb_lookup.py, since the
+Bank periodically re-designates it and new RRB issuance ceased in 2022.
 """
 
 VALET_BASE_URL = "https://www.bankofcanada.ca/valet"
 
-# How many most-recent observations to request on every daily pull. A window
-# (not just "today") is pulled so that any revision to a value published in
-# the last few days is captured under today's pull_date, which is what makes
-# the revision log (feature 3) possible.
+# Rolling window (not just "today") pulled daily so a value revised in the
+# last few days gets captured under today's pull_date (feature 3: revisions).
 OBSERVATION_WINDOW = 10
 
-# One-time backfill range (ingestion/backfill.py) — not used by the daily
-# pull. Chosen as a common window most of these series should have data
-# for; Valet simply returns less for a series that didn't exist yet this
-# far back rather than erroring. Keep in sync with dbt's
-# `backfill_start_date` var (dbt_project.yml) — dim_date's spine must start
-# no later than this or backfilled fact rows before it will fail the
+# One-time backfill start date — must stay in sync with dbt's
+# `backfill_start_date` var, or backfilled rows before it fail the
 # referential-integrity DQ check.
 BACKFILL_START_DATE = "2017-01-01"
 
@@ -43,12 +34,7 @@ SERIES_REGISTRY = {
 # percentiles, volume, unique submitters, trim rate).
 CORRA_GROUP_NAME = "CORRA_METRICS"
 
-# Pattern used by rrb_lookup.py to find the current Real Return Bond
-# benchmark series in /lists/series/json. Matched case-insensitively against
-# each series' description/label text. Verified against the live API
-# (2026-11-22): /lists/series/json has 15 series mentioning "real return
-# bond" (index ratios, CPI ref dates, asset holdings, ...) but only one —
-# BD.CDN.RRB.DQ.YLD, "Real Return Bonds yield, long-term" — is actually the
-# benchmark yield series (the RRB counterpart to BD.CDN.LONG.DQ.YLD etc.).
-# Narrowed to match on "yield" too so resolution stays unambiguous.
+# Matches the current RRB benchmark in /lists/series/json by description
+# text; narrowed to require "yield" since other RRB-related series exist
+# (index ratios, CPI ref dates) that aren't the benchmark yield itself.
 RRB_DESCRIPTION_PATTERN = r"real return bonds? yield"

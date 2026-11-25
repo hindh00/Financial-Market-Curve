@@ -1,22 +1,8 @@
-"""One-time historical backfill — run manually via workflow_dispatch
-(.github/workflows/backfill.yml), never on the daily schedule.
-
-The daily cron (pull_series.py) only ever fetches a short rolling window
-going forward, so without this, every dashboard page starts essentially
-empty and takes months/years to fill in. This instead pulls each series'
-full available history in one call per series and lands it under a
-separate /_backfill/ prefix in the Volume, so land_bronze_files() can
-treat it differently from daily snapshots (see snapshot.backfill_blob_path
-and dbt/models/silver/stg_observations.sql's pull_date handling).
-
-Re-running this is safe and idempotent: each series' backfill file lives
-at one fixed path and is simply overwritten, not appended.
-
-Backfilled rows can't carry revision history (the historical endpoint
-returns each date's already-settled value, not what was published on each
-day in the past) — revision tracking only becomes meaningful from the day
-the daily cron starts running. This is purely about giving the curve,
-decision-day, and CORRA pages real history to show immediately.
+"""One-time historical backfill — run manually via workflow_dispatch, never on
+the daily schedule. Pulls each series' full history into a separate
+/_backfill/ prefix so dashboards aren't empty for months; backfilled rows
+can't carry revision history since the historical endpoint only returns
+already-settled values.
 """
 
 from __future__ import annotations

@@ -1,9 +1,6 @@
 {#
-  CORRA is published via the CORRA_METRICS group (not a bare series, and
-  not named "AVG.INTWO" — that's just the id of the rate sub-series within
-  the group). The group bundles the rate itself plus trading-volume and
-  percentile transparency metrics. Field names below are verified against
-  a real /observations/group/CORRA_METRICS/json response (2026-11-22).
+  CORRA publishes via the CORRA_METRICS group, not a bare series — the
+  group bundles the rate ("AVG.INTWO") plus volume and percentile metrics.
 #}
 
 with exploded as (

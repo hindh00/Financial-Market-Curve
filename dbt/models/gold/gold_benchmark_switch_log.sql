@@ -1,17 +1,9 @@
 {#
-  Detects likely benchmark-bond roll days: a tenor whose yield jumps hard
-  on a day when the rest of the curve broadly didn't move. That pattern —
-  one tenor moving alone, well beyond its typical day-to-day change — is
-  more consistent with the on-the-run bond being swapped for a newer issue
-  than with an actual market move, which tends to be correlated across
-  nearby tenors. This is a heuristic (see the threshold vars in
-  dbt_project.yml): calibrate benchmark_switch_abs_threshold against real
-  data once enough history exists, and if /lists/series/json ever exposes
-  a cleaner issue-level signal for a roll, prefer that instead.
-
-  Deliberately reads from stg_observations (not fact_observation) to avoid
-  a circular ref — fact_observation itself joins against this model to set
-  is_benchmark_switch_day.
+  Heuristic: flags a tenor whose yield jumps hard alone while the rest of
+  the curve doesn't move, which looks more like a bond roll than a market
+  move. Reads from stg_observations, not fact_observation, to avoid a
+  circular ref (fact_observation joins against this to set
+  is_benchmark_switch_day).
 #}
 
 with tenor_values as (

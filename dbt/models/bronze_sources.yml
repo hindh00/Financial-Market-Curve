@@ -15,9 +15,7 @@ sources:
             tests: [not_null]
           - name: pull_date
             description: >
-              NULL by design for backfill rows (is_backfill=true) — a
-              backfill file has no single meaningful file-level pull_date,
-              since it spans years of history in one call. See
+              NULL by design for backfill rows (is_backfill=true) — see
               stg_observations.sql for how it's derived per-row instead.
           - name: payload_json
             tests: [not_null]
@@ -25,11 +23,7 @@ sources:
             description: Uniform (observation_date, field_name, value_raw) array — see ingestion/flatten.py.
             tests: [not_null]
           - name: is_backfill
-            description: >
-              True for rows landed from ingestion/backfill.py (one file per
-              series, years of history) rather than the daily cron (one
-              file per series per day). See stg_observations.sql for how
-              pull_date is derived differently for each.
+            description: True for rows landed by ingestion/backfill.py rather than the daily cron.
             tests: [not_null]
 
       - name: raw_dq_results

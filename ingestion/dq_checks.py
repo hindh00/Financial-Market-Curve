@@ -1,17 +1,8 @@
-"""Data-quality checks that aren't naturally SQL-shaped and so live in Python
-rather than as dbt tests (see dbt/tests/ for the SQL-shaped ones: curve
-integrity, holiday-aware completeness, referential integrity).
-
-Covered here:
-  - freshness / lookahead risk (CORRA's next-morning publish lag)
-  - >4 std-dev jump detection
-  - revision diffing between two pulls of the same observation_date
-  - API schema drift (fields appearing/disappearing between pulls)
-
-Each check returns a list of result dicts shaped like a row of
-gold_dq_results, so the same function can be unit-tested here and also
-called from a small script that lands its output into the Volume for dbt
-to pick up (see docs/architecture.md).
+"""Data-quality checks that aren't SQL-shaped, so they live in Python rather
+than as dbt tests (see dbt/tests/ for curve integrity, holiday-aware
+completeness, referential integrity). Each check returns a dict shaped like a
+gold_dq_results row, so it's unit-testable here and also callable from the
+script that lands results into the Volume for dbt to pick up.
 """
 
 from __future__ import annotations
@@ -20,10 +11,8 @@ import statistics
 from datetime import date, timedelta
 from typing import Any
 
-# CORRA is published the business day AFTER the trades it covers (MTRS
-# submission deadline 22:00 ET, CORRA published 9:00-11:00 ET the next
-# business day). Treating a CORRA value as available on its own
-# observation_date is a lookahead error.
+# CORRA publishes the business day after the trades it covers; treating it
+# as available on its own observation_date is a lookahead error.
 CORRA_PUBLISH_LAG_BUSINESS_DAYS = 1
 
 
@@ -56,18 +45,10 @@ def check_corra_freshness(observation_date: date, pull_date: date, holidays: set
 
 
 def check_jump(series_id: str, dated_values: list[tuple[date, float]], threshold_std: float = 4.0) -> list[dict[str, Any]]:
-    """Flag daily changes that are statistical outliers relative to the
-    series' typical daily change, using a robust (median/MAD-based) z-score
-    rather than mean/stdev. A classical mean+stdev z-score computed over the
-    same window the outlier is drawn from gets inflated by the outlier
-    itself, which can mask the very jump it's meant to catch; the median
-    absolute deviation doesn't have that failure mode. `threshold_std` is
-    expressed in "standard-deviation-equivalent" units (robust z-score),
-    matching the spec's ">4 standard deviations" framing.
-
-    Caller is responsible for excluding (or the gold layer for
-    re-including as "explained") benchmark-switch days — this function has
-    no notion of switches, it just flags jumps.
+    """Flag daily changes that are statistical outliers, using a robust
+    median/MAD z-score rather than mean/stdev (a classical z-score gets
+    inflated by the very outlier it's meant to catch). Caller is responsible
+    for excluding benchmark-switch days — this function has no notion of them.
     """
     if len(dated_values) < 3:
         return []

@@ -1,18 +1,8 @@
-"""Normalize Valet API responses into a uniform tall shape at ingestion time.
-
-Single-series and group (e.g. CORRA's CORRA_METRICS) responses have different
-JSON shapes — a series response's per-day object has one dynamic key (the
-series id), a group response's has several (one per sub-field: the rate
-itself, percentiles, volume, ...). Flattening both into the same
-(observation_date, field_name, value_raw) shape here, in Python, means
-silver's dbt models can explode a single fixed-schema array with
-from_json(..., 'array<struct<observation_date:string,field_name:string,value_raw:string>>')
-instead of needing dynamic-key JSON parsing in Spark SQL, which has no
-clean, version-stable way to handle a field name that varies per row.
-
-The verbatim API payload is still kept in the envelope (snapshot.py) for
-auditability and schema-drift detection — this flattened view is an
-addition, not a replacement.
+"""Normalize Valet API responses into a uniform (observation_date, field_name,
+value_raw) shape at ingestion time, since single-series and group responses
+have different JSON shapes with dynamic keys Spark SQL can't cleanly parse.
+The verbatim payload is still kept in the envelope for auditability; this is
+an addition, not a replacement.
 """
 
 from __future__ import annotations

@@ -1,11 +1,7 @@
-"""Push landed snapshot JSON into the Databricks Unity Catalog Volume.
-
-This is an INBOUND call (GitHub Actions -> Databricks Files API), which is
-not subject to Databricks Free Edition's outbound-internet allowlist —
-that restriction only applies to calls made FROM Databricks compute TO the
-public internet (e.g. a notebook calling bankofcanada.ca). That's exactly
-why the Valet pull happens here in GitHub Actions rather than in a
-Databricks notebook/job.
+"""Push landed snapshot JSON into the Databricks Unity Catalog Volume via an
+inbound Files-API call — not subject to Free Edition's outbound-internet
+allowlist, which is why the Valet pull itself happens in GitHub Actions
+rather than a Databricks notebook/job.
 """
 
 from __future__ import annotations
@@ -37,10 +33,8 @@ class DatabricksConfig:
         ] if not val]
         if missing:
             raise DatabricksUploadError(f"Missing required env vars: {', '.join(missing)}")
-        # Normalize away any scheme: dbt-databricks' profiles.yml `host:` field
-        # wants a bare hostname (it prepends https:// itself), so DATABRICKS_HOST
-        # is defined as bare-hostname everywhere, and this is the one place
-        # that still needs a full URL — built explicitly in upload_json below.
+        # dbt-databricks' profiles.yml wants a bare hostname; strip any scheme
+        # here since upload_json below is the one place that rebuilds a full URL.
         host = host.rstrip("/")
         for scheme in ("https://", "http://"):
             if host.startswith(scheme):
@@ -49,12 +43,8 @@ class DatabricksConfig:
 
 
 def upload_json(config: DatabricksConfig, relative_path: str, envelope: dict) -> None:
-    """PUT the envelope JSON to {volume_path}/{relative_path} via the Files API.
-
-    Uses the Databricks Files REST API (PUT /api/2.0/fs/files{path}), which
-    overwrites in place — safe here because relative_path is keyed on
-    pull_date, so only today's file is ever touched.
-    """
+    """PUT the envelope to {volume_path}/{relative_path}; overwrite is safe
+    since relative_path is keyed on pull_date, so only today's file is touched."""
     full_path = f"{config.volume_path}/{relative_path}"
     url = f"https://{config.host}/api/2.0/fs/files{full_path}"
     body = json.dumps(envelope).encode("utf-8")

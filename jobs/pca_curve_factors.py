@@ -1,24 +1,9 @@
-"""PCA on daily yield-curve changes — level/slope/curvature factors.
-
-Runs as a single Databricks Job Python task (see docs/architecture.md for
-the full job task chain), chained after `dbt build`, never in parallel
-with it — Free Edition caps the account at 5 concurrent job tasks, and
-there's no reason for this to run concurrently with anything else anyway
-since it depends on gold_daily_curve being fresh.
-
-Not a dbt SQL model: dbt has no linear-algebra primitive, and PCA needs
-numpy. Uses the Databricks SQL connector (works against the one serverless
-SQL warehouse Free Edition provides) rather than assuming a Spark session
-is available in whatever compute runs this task — a plain Python
-environment is usable either way.
-
-PCA convention: on a yield-curve change matrix, the first three principal
-components conventionally correspond to parallel shift ("level"),
-flattening/steepening ("slope"), and hump/belly movement ("curvature") —
-this is a naming convention based on typical loading shapes, not something
-auto-detected per run. Explained-variance ratios are logged on every run as
-the built-in sanity check: if the first two components don't explain a
-large majority of the variance, something about the input data is off.
+"""PCA on daily yield-curve changes — level/slope/curvature factors. Not a dbt
+SQL model (dbt has no linear-algebra primitive); runs as a Databricks Job
+Python task chained after `dbt build` (see docs/architecture.md). PC1/PC2/PC3
+are labeled level/slope/curvature by convention (typical loading shapes), not
+auto-detected — explained-variance ratios are logged every run as a sanity
+check on that assumption.
 """
 
 from __future__ import annotations

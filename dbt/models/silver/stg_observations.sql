@@ -1,27 +1,11 @@
 {#
-  Typed, long-format reshape of every non-CORRA series (CORRA's group
-  shape is handled separately in stg_corra.sql, since it has several
-  named sub-fields per day rather than one value).
-
-  Multiple pull_date rows can exist for the same (series_id, observation_date)
-  — that's intentional: OBSERVATION_WINDOW re-fetches a rolling window every
-  day, so a value revised after first publication shows up as a second row
-  with a later pull_date and a different value. gold/fact_observation.sql
-  is what decides is_latest_pull / is_revision from this.
-
-  value_raw is split into a numeric value plus any trailing non-numeric
-  suffix (revision_flag_raw) defensively, in case Valet ever marks a
-  revised value with a suffix on the raw string (the Bank's CORRA *webpage*
-  marks revisions with "R", but it's unconfirmed whether the raw API value
-  string ever does the same — this is a no-op if it never does).
-
-  pull_date is derived per-row for backfilled data (is_backfill=true, from
-  ingestion/backfill.py): a backfill file has no single meaningful
-  file-level pull_date since it spans years of observations in one call,
-  so each row instead uses its own observation_date as a stand-in. This is
-  also why backfilled rows can't carry revision history — there's no
-  record of what was "pulled" on any day other than the day the backfill
-  itself ran.
+  Typed, long-format reshape of every non-CORRA series (see stg_corra.sql
+  for CORRA's group shape). Multiple pull_date rows can exist per
+  (series_id, observation_date) by design — a revised value shows up as a
+  later-pull_date row, and gold/fact_observation.sql decides
+  is_latest_pull/is_revision from that. For backfilled rows, pull_date is
+  derived from observation_date itself, since one backfill file has no
+  single meaningful file-level pull_date.
 #}
 
 with exploded as (

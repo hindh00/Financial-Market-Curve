@@ -11,34 +11,19 @@ macro-paths: ["macros"]
 clean-targets: ["target", "dbt_packages"]
 
 vars:
-  # The Unity Catalog catalog this whole project reads/writes — single
-  # source of truth so the name only needs to be set in one place
-  # (matches what you actually name it in Phase 0 setup).
+  # Single source of truth for the Unity Catalog catalog name.
   catalog_name: "financial_market_curve"
 
-  # Reads the same BACKFILL_START_DATE env var ingestion/backfill.py
-  # already prefers over its own constant, so setting that one env var
-  # (in .env locally, or as a GitHub secret/var in CI) moves both sides at
-  # once — falls back to 2017-01-01 if unset, matching ingestion/config.py.
-  # If this ever drifts earlier than what's actually been backfilled,
-  # backfilled fact rows before it will fail the referential-integrity DQ
-  # check (no matching dim_date row to join to).
+  # Must stay in sync with ingestion/config.py's BACKFILL_START_DATE, or
+  # backfilled rows before it fail the referential-integrity DQ check.
   backfill_start_date: "{{ env_var('BACKFILL_START_DATE', '2017-01-01') }}"
 
-  # >4 std-dev (robust) jump threshold — single-bad-datapoint DQ check.
-  # Consumed by dbt/models/gold/dq_checks/dq_jump_check.sql (the live
-  # check). ingestion/dq_checks.py's check_jump() is a Python equivalent
-  # with the same median/MAD formula, kept for its unit tests and as a
-  # reference implementation, but it isn't wired into the pull-time
-  # pipeline — the dbt model is what actually runs.
+  # >4 std-dev (robust) jump threshold, consumed by dq_jump_check.sql.
   jump_threshold_std: 4.0
 
-  # Benchmark-switch heuristic (gold_benchmark_switch_log): a tenor's daily
-  # yield change must exceed this absolute threshold (percentage points,
-  # i.e. 0.15 = 15 bps) AND be >3x that day's median move across all
-  # benchmark tenors to be flagged as a likely bond-roll artifact rather
-  # than a market-wide move. Calibrate against real data once Phase 1 has
-  # enough history to see what an actual switch day looks like.
+  # Benchmark-switch heuristic: a tenor's daily yield change (percentage
+  # points, so 0.15 = 15bps) must exceed this AND be >3x that day's median
+  # move to be flagged as a likely bond roll rather than a market move.
   benchmark_switch_abs_threshold: 0.15
 
 models:
